@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="../CheckersGames.tests/CheckersGames.tests.csproj" Id="e59a1c94-4847-43e0-9b4c-b27271ea7906" DisplayName="CheckersGames.Tests" />
+  <Project Path="CheckersGame.csproj" />
+</Solution>
