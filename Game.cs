@@ -4,7 +4,7 @@ public class Game
 {
     public Board Board { get; set; } = new Board();
 
-    public PieceColor CurrentTurn { get; private set; } = PieceColor.Red;
+    public PieceColor CurrentTurn { get; set; } = PieceColor.Red;
 
     public Game()
     {
@@ -14,6 +14,7 @@ public class Game
     public void Start()
     {
         Console.WriteLine("Welcome to Checkers");
+
 
         while (true)
         {
@@ -37,24 +38,45 @@ public class Game
             int fromCol = int.Parse(parts[1]);
             int toRow = int.Parse(parts[2]);
             int toCol = int.Parse(parts[3]);
-
+        
             if (Move(fromRow, fromCol, toRow, toCol))
             {
-                // Switch turns
-                CurrentTurn = CurrentTurn == PieceColor.Red 
-                    ? PieceColor.Black 
-                    : PieceColor.Red;
+                if (CheckWinner())
+                {
+                    Console.WriteLine($"{CurrentTurn} wins!");
+                    break;
+                }
+                //Computers turn
+                CurrentTurn = PieceColor.Black;
+
+                PrintBoard();
+
+                Console.WriteLine("Computer's turn...");
+                ComputerMove();
+
+                if (CheckWinner())
+                {
+                    Console.WriteLine($"{CurrentTurn} wins!");
+                    break;
+                }
+                // Switch back to player's turn
+                CurrentTurn = PieceColor.Red;
             }
             else
             {
                 Console.WriteLine("Invalid move.");
+            
             }
         }
     }
     // Movement logic lives here
     public bool Move(int fromRow, int fromCol, int toRow, int toCol)
     {
-        var piece = Board.Grid[fromRow, fromCol];
+        // Stay on the Board
+        if (toRow < 0 || toRow > 7 || toCol < 0 || toCol > 7)
+            return false;
+
+        Piece piece = Board.Grid[fromRow, fromCol];
 
         if (piece == null)
             return false;
@@ -83,44 +105,101 @@ public class Game
             if (rowDiff != 1 && rowDiff != 2)
                 return false;
         }
+        // Normal Move 
+        if (Math.Abs(rowDiff) == 1 && colDiff == 1)
+        {
+            Board.Grid[toRow, toCol] = piece;
+            Board.Grid[fromRow, fromCol] = null;
+            return true;
+        }
+        // Capture move (jump 2)
+        if (Math.Abs(rowDiff) == 2 && colDiff == 2)
+        {
+            int midRow = (fromRow + toRow) / 2;
+            int midCol = (fromCol + toCol) / 2;
 
-        Console.WriteLine($"Row difference: {rowDiff}");
-        Console.WriteLine($"Column difference: {colDiff}");
+            Piece middlePiece = Board.Grid[midRow, midCol];
 
-
-             // Basic Move (diagonal 1)
-             if (Math.Abs(rowDiff) == 1 && colDiff == 1)
-             {
-
-                if (Board.Grid[toRow, toCol] == null)
-                {
-                    Board.Grid[toRow, toCol] = piece;
-                    Board.Grid[fromRow, fromCol] = null;
-                    return true;
-                }
-            }
-
-            // Capture move (jump 2)
-            if (Math.Abs(rowDiff) == 2 && colDiff == 2)
+            if (middlePiece != null && middlePiece.Color != piece.Color)
             {
-                int midRow = (fromRow + toRow) / 2;
-                int midCol = (fromCol + toCol) / 2;
-
-                var middlePiece = Board.Grid[midRow, midCol];
-
-                if (middlePiece != null && middlePiece.Color != piece.Color)
-                {
-                    Board.Grid[toRow, toCol] = piece;
-                    Board.Grid[fromRow, fromCol] = null;
-                    Board.Grid[midRow, midCol] = null;
-                    return true;
-                }
+                Board.Grid[toRow, toCol] = piece;
+                Board.Grid[fromRow, fromCol] = null;
+                Board.Grid[midRow, midCol] = null;
+                return true;
             }
-            return false;
         }
 
-    public void PrintBoard()
+    return false;
+
+}
+// Simple AI for computer move
+public void ComputerMove()
+{
+        // Look for capture moves first
+        for (int row = 0; row < 8; row++)
+        {
+            for (int col = 0; col < 8; col++)
+            {
+
+                Piece piece = Board.Grid[row, col];
+
+                if (piece == null || piece.Color != PieceColor.Black)
+                    continue;
+
+                if (Move(row, col, row + 2, col - 2))
+                    return;
+
+                if (Move(row, col, row + 2, col + 2))
+                    return;
+
+            }
+        }
+        // If no captures, make a normal move
+        for (int row = 0; row < 8; row++)
+        {
+            for (int col = 0; col < 8; col++)
+            {
+                Piece piece = Board.Grid[row, col];
+                if (piece == null || piece.Color != PieceColor.Black)
+                    continue;
+                if (Move(row, col, row + 1, col - 1))
+                    return;
+                if (Move(row, col, row + 1, col + 1))
+                    return;
+            }
+        }
+    }
+
+    public bool CheckWinner()
     {
+        bool redExists = false;
+        bool blackExists = false;
+
+        for (int row = 0; row < 8; row++)
+        {
+            for (int col = 0; col < 8; col++)
+            {
+                Piece piece = Board.Grid[row, col];
+
+                if (piece != null)
+                {
+                    if (piece.Color == PieceColor.Red)
+                        redExists = true;
+
+                    if (piece.Color == PieceColor.Black)
+                        blackExists = true;
+                }
+            }
+        }
+
+        if (!redExists || !blackExists)
+            return true;
+
+        return false;
+    }
+    
+    public void PrintBoard()
+    { 
         Console.WriteLine("  0 1 2 3 4 5 6 7");
 
         for (int row = 0; row < 8; row++)
@@ -140,6 +219,7 @@ public class Game
             Console.WriteLine();
         }
     
+        Console.WriteLine();
     }
  
 }
